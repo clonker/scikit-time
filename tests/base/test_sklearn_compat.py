@@ -10,7 +10,7 @@ import sktime.clustering.kmeans as kmeans
 import sktime.decomposition.tica as tica
 import sktime.markov.msm as msm
 from sktime.markov import TransitionCountEstimator
-from sktime.markov._base import TimeSeriesCVSplitter
+from sktime.validation import TimeSeriesContainer, TimeSeriesCVSplitter
 
 
 class TestSkLearnCompat(unittest.TestCase):
@@ -39,15 +39,19 @@ class TestSkLearnCompat(unittest.TestCase):
         assert mindist < 0.05
 
     def test_cross_validation(self):
-        data = sktime.data.ellipsoids().observations(1000, n_dim=50, noise=True)
+        data = [sktime.data.ellipsoids().observations(30, n_dim=50, noise=True)
+                for _ in range(10)]
+        data = TimeSeriesContainer(data)
         tica_model = sktime.decomposition.TICA().fit(data, lagtime=1).fetch_model()
         tica_estimator = sktime.decomposition.TICA()
 
-        def scorer(tica_est, X, *args, **kw):
+        def scorer(tica_est: tica.TICA, X, *args, **kw):
             test_model = sktime.decomposition.TICA().fit(X, lagtime=1).fetch_model()
             return tica_est.fetch_model().score(test_model=test_model)
 
-        split = TimeSeriesCVSplitter(n_splits=10, lagtime=1, sliding=True)
-        scores = cross_validate(tica_estimator, data, scoring=scorer, cv=split, fit_params=dict(lagtime=1))
-        print(scores)
-        print(tica_model.score())
+        splitter = TimeSeriesCVSplitter(n_splits=10, lagtime=1, sliding=True)
+        splits = splitter.split(data[0])
+        print("splits:", list(splits))
+        scores = cross_validate(tica_estimator, data, scoring=scorer, cv=splitter, fit_params=dict(lagtime=1), n_jobs=1)
+        #print(scores)
+        #print(tica_model.score())

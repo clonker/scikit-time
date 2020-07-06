@@ -49,6 +49,32 @@ def blocksplit_dtrajs(dtrajs, lag=1, sliding=True, shift=None, random_state=None
     return dtrajs_new
 
 
+def argblocksplit_trajs(trajs, lagtime=1, sliding=True, shift=None, random_state=None):
+    r""" Same as :meth:`blocksplit_trajs`, just that it returns indices rather than data. """
+    from sklearn.utils.random import check_random_state
+    arg_trajs_new = []
+    random_state = check_random_state(random_state)
+    for i, traj in enumerate(trajs):
+        if len(traj) <= lagtime:
+            continue
+        if shift is None:
+            s = random_state.randint(min(lagtime, traj.size - lagtime))
+        else:
+            s = shift
+        if sliding:
+            if s > 0:
+                indices = np.arange(0, lagtime + s)
+                arg_trajs_new.append((i * np.ones_like(indices), indices))
+            for t0 in range(s, traj.size - lagtime, lagtime):
+                indices = np.arange(t0, t0 + 2*lagtime)
+                arg_trajs_new.append((i * np.ones_like(indices), indices))
+        else:
+            for t0 in range(s, traj.size - lagtime, lagtime):
+                indices = np.arange(t0, t0 + lagtime + 1)
+                arg_trajs_new.append((i * np.ones_like(indices), indices))
+    return arg_trajs_new
+
+
 def cvsplit_dtrajs(trajs, random_state=None):
     """ Splits the trajectories into a training and test set with approximately equal number of trajectories
 
@@ -122,6 +148,7 @@ class BayesianPosterior(Model):
     --------
     sktime.markov.msm.BayesianMSM : bayesian posterior estimator
     """
+
     def __init__(self, prior=None, samples=None):
         r""" Creates a new instance of this type of model.
 

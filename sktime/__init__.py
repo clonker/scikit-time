@@ -9,6 +9,7 @@ from . import data
 from . import decomposition
 from . import markov
 from . import numeric
+from . import validation
 
 
 def capi_includes():

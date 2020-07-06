@@ -1,3 +1,5 @@
+import pathlib
+
 
 def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
@@ -15,5 +17,11 @@ def configuration(parent_package='', top_path=None):
     config.ext_modules = cythonize(
         config.ext_modules,
         compiler_directives={'language_level': '3'})
+
+    config.add_extension('_base_bindings',
+                         sources=['src/base_module.cpp'],
+                         include_dirs=['include', pathlib.Path(top_path) / 'sktime' / 'src' / 'include'],
+                         language='c++',
+                         )
 
     return config
